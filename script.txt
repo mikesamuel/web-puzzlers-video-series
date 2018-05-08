@@ -1,0 +1,28 @@
+If you like computer security puzzles, you'll like this.
+I work in Google's security engineering group.
+We improve languages and libraries to make it easier to produce secure
+products.
+
+I'd like to talk about how to engineer secure systems using dynamic
+languages.  This builds on and contrasts with a lot of work we've
+done on systems built with more static languages.
+
+Go ahead and [start][] with the puzzles.  In case you're interested
+in how this ties into the larger point I'm trying to make:
+
+1.  "[A very simple piece of code][]" shows a subtle security problem.
+    We use that to discuss the role code review plays in security.
+    Later we make a case for ways to enable effective, targeted
+    review even in highly dynamic languages.
+2.  "[Bags of properties][]" shows another subtle problem.
+    We need to mix data from trustworthy and untrustworthy sources,
+    but this example illustrates how some kinds of mixing break
+    security guarantees and suggests ways forward.
+3.  "[A string by any other name][]" considers XSS and the larger
+    problem -- a string of HTML is "just a string" until it is
+    parsed as code.  How do we manage security when it depends
+    on strings that aren't *just" strings?
+4.  "[Kernelizing][]" talks about how to maintain important
+    security properties despite bugs in application code.
+5.  "[Solutions][]" goes back to the puzzles and shows how
+    the proposed mechanisms work in practice.

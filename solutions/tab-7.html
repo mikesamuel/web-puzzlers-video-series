@@ -1,0 +1,178 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    tr { vertical-align: top }
+    td, th { padding: .5em; height: 5em }
+    table { margin: .5em }
+    body, p { font-size: 24pt }
+    .str > .pln, .str > .typ { color: green }
+    .sub { background-color: #ff888880 }
+    .add { background-color: #88ff8880 }
+  </style>
+  <body>
+    <h1>Solution: XSS in Legacy Code</h1>
+
+    <div>
+      <h3 class="for:1-3 rapid">html.js</h3>
+      <pre class="prettyprint lang-js for:1 rapid">
+import { TrustedHtml } from './trusted_types'
+import { createTrustedHtmlFromStringKnownToBeSafe }
+    from './create_trusted'
+
+function escapeHtml(s) {
+<span class="add"><span class="nocode">+</span>  let tt = TrustedHtml.unwrap(html)
+<span class="nocode">+</span>  if (typeof tt === 'string') {
+<span class="nocode">+</span>    return tt
+<span class="nocode">+</span>  }</span>
+  return (s + '').replace(/&amp;/g, '&amp;amp;')
+    .replace(/&lt;/g, '&amp;lt;')
+    .replace(/&gt;/g, '&amp;gt;')
+}
+&hellip;
+      </pre>
+      <pre class="prettyprint lang-js for:2 rapid">
+ &hellip;
+ function stripTags(html) {
+<span class="add"><span class="nocode">+</span>  let tt = TrustedHtml.unwrap(html)
+<span class="nocode">+</span>  if (typeof tt === 'string') {
+<span class="nocode">+</span>    return tt
+<span class="nocode">+</span>  }</span>
+   for (let s = '' + html, sp; ; s = sp) {
+     sp = s.replace(/&lt;\/?[\w!?][^&gt;]*&gt;?/g, '')
+     if (s === sp) {
+       return s.replace(/&lt;/g, '&amp;lt;')
+     }
+   }
+ }
+ &hellip;
+      </pre>
+      <pre class="prettyprint lang-js for:3 rapid">
+export function html(strings, ...data) {
+  let { raw } = strings, html = '', n = data.length
+  for (let i = 0; i < n; ++i) {
+    let chunk = raw[i], value = data[i], <span class=add>escaper = escapeHtml</span>
+    // html`foo $${x}` was used to apply stripTags instead.</b>
+    if (/[$]$/.test(chunk)
+        && !/(?:^|[^\\])[\\](?:\\\\)*[$]$/.test(strings[i])) {
+      <b>chunk = chunk.substring(0, chunk.length - 1)
+      escaper = stripTags</b>
+    }
+    html += chunk + <span class=add>escaper</span>(value)</b>
+  }
+  return <span class=add>createTrustedHtmlFromStringKnownToBeSafe</span>(html + raw[n])
+}
+      </pre>
+    </div>
+
+    <div class="for:6 rapid">
+      <h3>create_trusted.js</h3>
+      <pre class="prettyprint lang-js">
+import { TrustedHtml } from './trusted_types'
+
+export function createTrustedHtmlFromStringKnownToBeSafe(text) {
+  if (typeof text !== 'string') {
+    throw new Error(typeof text)
+  }
+  return new TrustedHtml(
+      frenemies.box(Object.freeze({ text, type: 'html' }),
+      () => true))
+}
+      </pre>
+    </div>
+
+    <div>
+      <h3 class="for:4-5 rapid">trusted_types.js</h3>
+      <pre class="prettyprint lang-js for:4 rapid">
+import {
+  createTrustedHtmlFromStringKnownToBeSafe,
+  publicKey as CREATE_TRUSTED_KEY
+} from './create_trusted'
+
+export class TrustedHtml {
+  constructor(content) {
+    this.content = content;
+    Object.freeze(this);
+  }
+}
+
+&hellip;
+      </pre>
+
+      <pre class="prettyprint lang-js for:5 rapid">&hellip;
+function unwrap(x) {
+  if (x && typeof x === 'object') {
+  let v = frenemies.unbox(x.content,
+                          (k) => k === CREATE_TRUSTED_KEY && k())
+    if (v && v.type === 'html') { return v.text }
+  }
+}
+Object.defineProperties(
+  TrustedHtml,
+  {
+    unwrap: { value: unwrap },
+    EMPTY: { value: createTrustedHtmlFromStringKnownToBeSafe('') }
+  })
+      </pre>
+    </div>
+
+    <div class="for:7 rapid">
+      <h3>legacy_names.js</h3>
+      <pre class="prettyprint lang-js">
+<span class=add>// Safe since only passed string constants.
+import { createTrustedHtmlFromStringKnownToBeSafe as create }
+    from './create_trusted'</span>
+
+// Legacy users from the bip bop acquisition get to keep their
+// usernames with colors.
+export let legacyNames = {
+  85322: <span class=add>create</span>('&lt;font color=red&gt;A&lt;/font&gt;&lt;font color=orange&gt;l&lt;/font&gt;&lt;font color=yellow&gt;i&lt;/font&gt;&lt;font color=green&gt;c&lt;/font&gt;&lt;font color=blue&gt;e&lt;/font&gt;'),
+  11673: <span class=add>create</span>('&lt;font color=black&gt;Bob&lt;/font&gt;')
+}
+</pre>
+    </div>
+
+    <div class="for:8 rapid">
+      <h3>index.js</h3>
+      <pre class="prettyprint lang-js">
+  let properNoun1 = legacyNames[inputs.legacyUserId]
+      || inputs.properNoun1 || 'You'
+
+  return html<span class="str">`
+    &lt;html&gt;
+      &lt;title&gt;Hello, here's a thing, goodbye&lt;/title&gt;
+      &lt;body&gt;
+        &lt;h1&gt;Dear $$</span>{<span class=sub>&hellip;</span>properNoun1}<span class="str">,&lt;/h1&gt;
+        &lt;p&gt;Please find a $</span>{noun1}<span class="str"> attached that you can use to
+           $</span>{verb}<span class="str"> your $</span>{noun2}<span class="str">.&lt;/p&gt;
+        &lt;p&gt;Have an $</span>{adjective}<span class="str"> day!&lt;/p&gt;
+        &lt;p&gt;Sincerely, $</span>{properNoun2}<span class="str">&lt;/p&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;`</span>
+</pre>
+    </div>
+
+    <div class="for:9 rapid">
+      <pre class="prettyprint lang-js">
+> TrustedHtml.unwrap(render(`{
+  "legacyUserId": "85322.0",
+  "properNoun1": "&lt;script&gt;alert(parent.render)&lt;/script&gt;"
+}`))
+</pre><xmp class="prettyprint lang-html">
+      <html>
+        <title>Hello, here's a thing, goodbye</title>
+        <body>
+          <h1>Dear alert(parent.render),</h1>
+          <p>Please find a spoon attached that you can use to
+             stir your soup.</p>
+          <p>Have an awesome day!</p>
+          <p>Sincerely, Management</p>
+        </body>
+      </html>
+</xmp>
+    </div>
+
+    <script src="../slide.js"></script>
+  </body>
+</html>

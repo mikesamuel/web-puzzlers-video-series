@@ -1,0 +1,79 @@
+[TAB-0]: intro slide
+Welcome, and thanks for watching.
+
+I've presented three web security puzzlers.
+In this video, I want to pose the question that prompted this
+series about "securing dynamic languages."
+
+The next video is going to talk about some language
+tweaks that I think enable a lot of different answers to that
+question.  There will be one last video after that that
+shows how these solutions work in practice.
+
+There are links to the puzzle videos and the next video
+in the video notes below.
+
+
+[FWD]: a simple piece of code
+The first puzzle involved a simple function.  It just looked up an
+entry in a table and maybe called a function.  But it could be
+exploited to run any JavaScript even though it never mentioned "eval",
+or "Function".
+
+I asked web developers and security specialists.  Many did not
+identify the risk even knowing it was a security puzzle and spending
+more time on it than on a normal review.
+
+We need better ways than just code review and linters when a single
+false negative leaves us vulnerable.
+
+
+[FWD]: bags of properties
+Second, I showed you code that used a "bags of properties"
+approach.  Writing short succinct programs is hard
+when you have to keep sensitive data confidential.
+
+We need a consistent approach to preventing accidental leaks.
+
+
+[FWD]: a string by any other name
+Third, I showed you a subtle XSS in some legacy code.
+Sometimes strings are later treated as trusted code.
+For example, when they're loaded by a browser.
+In other words, some strings are not "just" strings -- whoever
+controls them has many of the same powers as an application developer.
+
+We need to make it difficult to accidentally use any old string this way.
+
+[FWD]
+The question I'd like to pose is this:
+
+[FWD]
+Assuming that,
+
+[FWD]
+despite code review and linters, (which I showed were unreliable in the first puzzle),
+JavaScript code is going to
+
+[FWD]
+mistakenly mix properties and meta-properties (as shown in the first puzzle),
+
+[FWD]
+mix sensitive and not-so-sensitive values (as shown in the second puzzle),
+
+[FWD]
+and mix trustworthy and untrustworthy values (as shown in the third puzzle),
+
+[FWD]
+how can developers and security specialists
+work together efficiently to produce secure software?
+
+Humans can vet small amounts of code well, or large amounts badly.
+We need to work together to bring human judgement to bear where its necessary,
+without requiring humans to vet large amounts of code.
+
+The next video will provide one answer.  I'd love to hear your answers,
+so please give it some thought before watching that.
+If you think I'm asking the wrong question, please leave me a comment about that too.
+
+Thanks for watching.

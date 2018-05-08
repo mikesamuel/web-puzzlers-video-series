@@ -1,0 +1,142 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body, p { font-size: 24pt }
+    .sub { background-color: #ff888880 }
+    .add { background-color: #88ff8880 }
+    pre.prettyprint.lang-sh { border: 2px solid black !important; background: #80808080; display: inline-block; margin-left: .75em }
+  </style>
+  <body>
+    <h1>Solution 2: Leaky Bags of Properties</h1>
+
+    <section class="for:0 rapid">
+      <h2>Problem</h2>
+
+      <p>Too easy to conflate properties with different security needs.</p>
+    </section>
+
+    <section class="for:1 rapid">
+      <h2>Security Story</h2>
+
+      <blockquote>
+        <ul>
+          <li>Only <tt>reset_links.js</tt> can allocate password reset
+            URLs and they are unguessable.</li>
+          <li>The URLs are <b>boxed</b> and the box can only be opened
+            by <tt>send_reset_email.js</tt></li>
+          <li>Only those modules could leak a reset URL, and careful
+            review concluded they do not.</li>
+          <li>Therefore, leaks of reset links will not happen before
+            the link is enqueued in email.</li>
+        </ul>
+      </blockquote>
+    </section>
+
+    <section class="for:2 rapid">
+      <h3 style="margin-top:-1em">reset_links.mjs</h3>
+      <pre class="prettyprint">
+ import crypto from 'crypto'
+<span class="sub"><span class="nocode">-</span>import { enqueuePasswordResetEmail } from './send_reset_email'</span>
+<span class="add"><span class="nocode">+</span>import { enqueuePasswordResetEmail,
+  publicKey as SEND_RESET_EMAIL_KEY } from './send_reset_email'</span>
+ import { getUserRecord } from './index'
+@@
+   let nonce = randomByteString(64)
+   let expiry = Date.now() + 10 * 60 /* s/min */ * 1000 /* ms/s */
+   resetLinks[nonce] = { userId: req.userId, expiry }
+<span class="sub"><span class="nocode">-</span>  let url = `https://uforgot.example.com/${nonce}`</span>
+<span class="add"><span class="nocode">+</span>  let url = <b>frenemies.box</b>(
+<span class="nocode">+</span>      `https://uforgot.example.com/${nonce}`,
+<span class="nocode">+</span>      k => k === SEND_RESET_EMAIL_KEY && k())</span>
+   // Bundle data for the email template.
+   let data = Object.assign(getUserRecord(req), req, { url })
+</pre>
+    </section>
+
+    <section class="for:3 rapid">
+      <h3 style="margin-top:-1em">send_reset_email.mjs</h3>
+      <pre class="prettyprint">
+ export function enqueuePasswordResetEmail(data) {
+<span class="sub"><span class="nocode">-</span>  let email = `Dear ${data.displayName}, ${data.url} will let you reset your password.  Have an awesome day!`</span>
+<span class="add"><span class="nocode">+</span>  let url = frenemies.unbox(data.url, _ => true)
+<span class="nocode">+</span>  let email = `Dear ${data.displayName}, ${url} will let you reset your password.  Have an awesome day!`</span>
+   // Imagine the email is actually enqueued to the email of
+   // record for data.userId.
+   console.log(`Sent password reset email to ${data.userId}`)
+ }</pre>
+    </section>
+
+    <section class="for:4 rapid">
+      <h3 style="margin-top:-1em">Polyfill</h3>
+      <pre class="prettyprint">
+import {makeFrenemies} from './frenemies';
+const frenemies = makeFrenemies('$sourcefile');
+export let {publicKey} = frenemies;
+      </pre>
+    </section>
+
+    <section class="for:5 rapid">
+      <h3 style="margin-top:-1em">frenemies.mjs</h3>
+      <pre class="prettyprint">
+  // Allocate a public/private key pair.
+  function publicKey() {
+    return (hidden === privateKey);
+  }
+  function privateKey(f) {
+    const previous = hidden;
+
+    hidden = privateKey;
+    try {
+      return f();
+    } finally {
+      hidden = previous;
+    }
+  }</pre>
+    </section>
+
+    <section class="for:6 rapid">
+      <h3 style="margin-top:-1em">frenemies.mjs</h3>
+      <pre class="prettyprint">
+  function unbox(box, ifFrom, fallback) {
+    &hellip;  // Sanity checks
+    const data = boxes.get(box);
+    if (!data) { return fallback; }
+    const { boxerPriv, boxerPub, value, mayOpen } = data;
+    return (true === privateKey(() => mayOpen(publicKey)) &&
+            true === boxerPriv(() => ifFrom(boxerPub))) ?
+      value :
+      fallback;
+  }</pre>
+    </section>
+
+    <section class="for:7 rapid">
+      <pre class="prettyprint lang-sh" style="width:38em; overflow-wrap: break-word; border:1px solid red; white-space: pre-wrap">
+$ node --experimental-modules old/index.mjs \
+     '{"type": "pwd-reset", "userId": "b678"}' \
+     '{"type": "public",    "userId": "b678", "realName": ""}'
+<span class="nocode">(node:17635) ExperimentalWarning: The ESM module loader is experimental.
+Sent password reset email to b678</span>
+{"userId":"b678"}
+<span class="nocode">Error</span>: {"userId":"b678","realName":""} -> {"displayName":"B0B",<wbr>"realName":"elided","userId":"b678",<wbr><b>"url":"https://uforgot.example.com/F3SyEVMDpfewXsWQJNfdS4MNA+cbnx8LhDv4bqdKzbYo5ZzdUvXgCLrrg+BARkuniXuIFOrH08ATQFpGL2Zo6g=="</b>}
+  undefined
+</pre>
+    </section>
+
+    <section class="for:8 rapid">
+      <pre class="prettyprint lang-sh" style="width:38em; overflow-wrap: break-word; border:1px solid red; white-space: pre-wrap">
+$ node --experimental-modules new/index.mjs \
+     '{"type": "pwd-reset", "userId": "b678"}' \
+     '{"type": "public",    "userId": "b678", "realName": ""}'
+<span class="nocode">(node:17636) ExperimentalWarning: The ESM module loader is experimental.
+Sent password reset email to b678</span>
+{"userId":"b678"}
+<span class="nocode">Error</span>: {"userId":"b678","realName":""} -> {"displayName":"B0B",<wbr>"realName":"elided","userId":"b678",<wbr><b>"url":{}</b>}
+  undefined
+</pre>
+    </section>
+
+    <script src="../slide.js"></script>
+  </body>
+</html>

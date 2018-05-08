@@ -1,0 +1,395 @@
+[TAB-0]
+
+Welcome.  In the last video I talked about how security engineers
+craft security stories and some tweaks to dynamic languages that might
+make it easier to enforce some important security stories.
+
+I'm going to apply those ideas to each of the puzzlers.
+
+[FWD]
+I want to make sure that simple developer mistakes don't
+compromise security.  Even though there are probably small tweaks
+to each of the puzzles that prevent the attack, I've argued that
+we shouldn't put the burden of avoiding these security problems
+on developers and code reviewers.  They shouldn't have to know
+which subtly different ways of expressing an idea are secure and which
+aren't.
+
+[solution1.html: DOM view maximized]
+Here's our first puzzler.
+There's a link to Puzzle 1 in the video notes below if you need a
+refresher or haven't worked through the problem yet.
+
+The immediate problem was that simple string inputs can cause arbitrary code
+execution.
+
+[switch to console]
+[TYPE]: capitalOf('constructor', 'constructor', 'console.log(1)')
+
+The more general problem is that properties like constructor that
+are *about* language elements are mixed up with properties about
+application elements like facts about Alabama, *and*
+attackers can exploit those meta-properties.
+
+There's no way to separate user-defined properties from builtin
+meta-properties without fundamentally changing the language.
+
+Most of the danger from builtin meta-properties is unintended
+code loading though.  JavaScript engines have hooks that turn off
+this behavior.
+
+[back to element view: highlight first script]
+Content-Security-Policy turns off `eval` and capital-F Function.
+Here you can see a policy that allows two scripts.
+Here’s our capitalOf code.
+
+[highlight second script]
+The second script calls capitalOf twice.  One asks for the capital of
+Alabama in 1900.  The second is the attack.
+
+[back to console]
+[reload so calls show in console[
+The first call worked, and the second failed.
+
+[CONSOLE]: Node.js runtime with --disallow-unsafe-script-from-string
+[TYPE]: Function['constructor']['constructor']('console.log(1)')
+And the new disallow-unsafe-script-from-string flag does the same in
+Node.js.
+
+This addresses the immediate problem.  It's less than ideal, because
+there are legitimate uses for big-F Function.  Node JS introduced
+the same API under a different name: vm dot runInThisContext.
+Tricking code into calling runInThisContext might be harder, but it suffers
+the same flaw: it takes a string and runs it regardless of whether the
+string is trustworthy.
+
+As in the third puzzle, the decision to trust the string, implicit in
+passing it to runInThisContext may be out of sync with the code that
+controls the strings content.
+
+When I discuss the third puzzler, it'll become clear how allowing
+a TrustedScript type's values to be evaluated, but not arbitrary
+strings would address this in a comprehensive way.
+And how that would tie into strong security stories about code that
+is allowd to create TrustedScript values.
+
+[TAB-3]
+
+Let’s move on to our second puzzler.  Again, there's a link to the original
+video in the notes.
+
+The underlying problem was that you can quickly write
+code that is mostly correct by manipulating bags of properties
+but minor errors can lead to leaks and data overrides.
+
+
+[FWD]
+Here’s our security story.
+
+[READ]
+
+The original code was a single module so that it fit into a codepen but
+I’ve split it up.
+
+You can see that reset_links and send_reset_email cooperate.
+This is our secure kernel responsible for managing password resets.
+
+This security story works because we’ve identified a small amount
+of code that needs access to reset URLs.  We then check that those
+aren’t leaky.
+
+To make this story true though, I need some way to prevent any other
+code from accidentally leaking reset URLs.
+
+[FWD]
+Here's a diff.  The red code that starts with minus is the original.
+And the green code that starts with plus has the fix.
+
+Here the reset link module boxes the unguessable URL.
+A box is a value that holds another value.
+Only an approved opener can access its content, so
+accidentally passing a box to a logger won’t leak anything.
+The top change imports another module’s public key
+which is how it specifies whom to trust.
+I’ll explain what a module key is in a bit.
+
+[FWD]
+Here I've changed the email sender to unbox the reset link.
+
+This is running after being transpiled to add a polyfill to each module.
+[FWD]
+Each module now has a public identifier, a private
+Identifier, and a frenemies object with these box and unbox methods.
+[FWD]
+The public key returns true when called in the context of the private key.
+This means that one module can’t use another module’s public key to
+impersonate it.
+[FWD]
+And here is what unbox does.  It stores the value in a WeakMap so
+it is never reachable by reading a boxes properties or calling
+its methods.
+Then, unbox checks that the opener may open the box, and that
+the opener wants content from the box creator.
+
+[FWD]
+So if I run the original code in node, you can see that it leaks
+the reset URL.
+
+[FWD]
+But if I run the new code, you can see that the URL property is
+still there.  We didn't fix the surface bug.  Remember my goal
+is to make this code secure despite bugs.
+
+I made some very small changes in just two places to add a box
+and an unbox call, and fixed the problem.  No matter what the
+rest of the code does, URL won't leak.
+
+[TAB-4]
+I suggested in the wrapup to the second puzzle using symbols as keys
+for sensitive properties.  That addressed the immediate problem.
+
+[FWD]
+This approach gets at the core of the issue.
+
+Symbols were originally proposed as a way to enable private fields,
+but they morphed into a namespace separation mechanism.
+
+[FWD]
+Any security story that relies on symbols has to say something like
+"No object containing the reset URL reaches a stringifier that
+ stringifies symbol properties."
+
+In my experience, that's a much harder security story to check or
+enforce, since it requires reasoning about the code in all modules
+including your dependencies' dependencies' dependencies.
+
+[FWD]
+For example, this JSON replacer goes out of its way to make sure it
+doesn't miss any properties using Object.getOwnPropertySymbols.
+
+There have been similar problems in Java where stringifiers used
+setAccessible to access private fields and methods.
+
+If you have a way to make that story work though, please leave me a comment.
+
+[FWD]
+There is also an excellent private properties proposal that will
+probably become part of the language, but it will not address this
+problem.  Private properties help keep implementation details close,
+they do not prevent leaks of sensitive values that need to pass from
+one module to another, possibly through yet more modules.
+
+[FWD]
+Opaque boxes do though.  There is a related mechanism in the computer
+security literature called sealer/unsealer pairs.  This is a similar idea
+but focused on providing secure channels between modules.
+
+[FWD]
+This is not a data flow approach.
+
+Data flow schemes like COWL might address leakage more comprehensively.
+
+This scheme could complement dynamic data flow analysis.  Public /
+private key pairs don't have to only correspond to modules.
+This scheme could bridge with a data flow scheme if there were a key
+pair per label.
+
+
+[TAB-5]:
+
+The third puzzle dealt with HTML.  Again, see the notes below for a
+link if you haven't worked through it yet.
+
+Some HTML template code had a subtle bug, it assumed that only one
+primitive input value corresponded to a key in a table.
+
+I don't want security to depend on developers consistently avoiding
+these kinds of bugs, especially when that includes developers working
+under time pressure on code written long ago by someone else.
+
+So here's a security story that works.
+[read]
+
+Here we see three security story elements.
+[FWD]
+There’s a list of carefully reviewed files that lives alongside the source code,
+[FWD]
+a restriction on which code can create TrustedHtml values,
+[FWD]
+and a security decision that grants special privileges to those values.
+
+Let’s look at how we enforce those dynamically.
+
+[TAB-6]
+
+[FWD]
+Here’s how we define the TrustedHtmlProducer whitelist from our security story.
+
+You can see that create_trusted maps to a set of files that should be allowed to
+import it.
+
+[FWD]
+I hacked the module loader.  When one module imports another it calls
+this hook.  If I want to prevent an import, I can substitute a
+different URL.
+
+It takes a base URL, the importing module, and the module to import.
+Then it returns the URL to actually load.
+I won’t go into the rest of this script in detail.  It’s not long, just dense.
+
+The important thing here is that we have a way to declare
+which modules are sensitive, and which modules need to import
+them anyway, and then to enforce that.
+
+[FWD]
+Because of some specific design decisions, I can run this policy before
+any ES6 modules are loaded.
+Here’s a babel plugin that checks imports.  These intercept hooks
+don’t complicate code bundling.  First, we abstract away the URL
+space.
+
+[FWD]
+Then we use Babel to apply the policy and rewrite import declarations.
+Most of this code is just converting URLs so that we can compare them meaningfully.
+The bold code is where we call the import hook and substitute the imported module descriptor.
+
+[TAB-7]
+
+So we looked at how import hooks work.  Let’s see how our security
+story affects the way we rewrite code.
+
+[FWD]
+If escapeHtml’s input looks like a trusted string of HTML,
+it unrwaps it instead of escaping it.
+
+[FWD]
+stripTags does the same.
+
+[FWD]
+Here's our new html template tag definition.
+
+The diff doesn't fit on one slide.  The bolded if body was rewritten.
+
+Now it only uses the double dollar sign cue to decide which escaper
+to use.
+
+It lets the escaper decide how much escaping is done, and those
+escape functions only grant privilege to inputs that are marked
+trusted.
+
+An attacker would have to fool code on the whitelist if they want
+to get a privileged value with a payload here.  That's a smaller target.
+
+[FWD]
+Here's trusted_types dot js.  This is library code that's based
+on the proposed trusted types standard.
+
+It represents trusted strings of content: HTML, Javascript, CSS, etc.
+
+The TrustedHtml class just wraps the box to make it JavaScripty.
+
+[FWD]
+Function unwrap unboxes an instance, but it also checks
+that the box came from create_trusted.  This enforces the
+"only TrustedHtml values" part of our security story.
+
+At the bottom, we attach unwrap to TrustedHtml as a static method.
+
+[FWD]
+Here's create_trusted dot js.
+It exports a function that creates a trusted HTML string.
+Our security story says “only” certain code creates these values so this is
+the module that our whitelist guards.
+
+If you're interested in this pattern, see the link in the notes to the trusted
+types standards proposal.  We use libraries like it extensively within
+Google to provide security-by-construction for strings of shippable code.
+
+The exported function simply boxes the HTML string along with a type indicator.
+Any module can open it.
+
+
+[FWD]
+Our legacy names table now stores TrustedHTML values.  This module is on
+the whitelist so can import create trusted.
+
+The reviewer noted that it's safe because it is only
+called with constant strings.
+
+
+[FWD]
+Our use of the html template got a lot simpler.  Instead
+of calling isLegacyUser, it just passes the value straight through.
+
+Even if it did still have those checks, it would neither
+over-nor-under escape since the decision to escape is based on whether
+the value has a trusted type.
+
+[FWD]
+Here's what we get when we try our attack.
+stripTags gets rid of the script tags and we get an innocuous result.
+
+We didn't set out to fix the bug, but by virtue of marking things as
+safe where we know that they're safe, that buggy code became
+irrelevant.
+
+
+[TAB-8]
+
+[FWD]
+I hope I've convinced you that there are a few changes to JavaScript
+that will give security engineers the ability to craft strong security
+stories that do not depend on the correctness of the majority of code.
+
+We can remove the burden of guaranteeing many interesting security
+properties from developers and have more productive relationships
+between developers and reviewers.
+
+Here's the argument in a nutshell:
+
+[FWD]
+*  I asserted based on the first puzzle that we can't rely on developers,
+   reviewers, and unsound linters to catch common security problems.
+[FWD]
+*  We need ways to preserve security even when code written in good
+   faith has errors.
+[FWD]
+*  We can't efficiently deploy human judgement to check security stories
+   that assert about "all code", but we can for "only code".
+[FWD]
+*  The proposed mechanisms make it practical to enforce a wide variety of
+   "only code" stories with small targeted code changes.
+
+Adding these mechanisms to web infrastructure will make important security stories feasible.
+
+[FWD]
+Finally, I've tried to avoid security and programming language jargon
+in this series, but I'd like to try to anticipate one objection from
+other security folk.
+
+Some have argued that Spectre make approaches like this obsolete.
+Some respected researchers have even said that language based security
+is dead, and that we shouldn't waste time on any isolation mechanism
+less thoroughly hardened than process boundaries.
+
+A spectre-based exploit could break the security story for the second
+puzzle since the password reset link is stored in memory.  It does not
+affect the other two though, since spectre, by itself, does not affect
+integrity or availability unless those depend on confidentiality.
+
+The mechanisms I propose do not depend on confidentiality.  There is
+no secret that lets you forge a module identity since they depend on
+reference identity.  You would have to have a memory write compromise
+in a JavaScript engine process, in addition to a read compromise.
+
+That an integrity violation in a JavaScript engine can compromise the
+security of application JavaScript is not a surprise, nor is it a
+defeater for my claim that we can improve the security of application
+level JavaScript when integrity and availability do not depend on
+confidentiality.
+
+Anyway, enough of that.
+
+[FWD]
+Thanks much for watching and I look forward to engaging with you in
+the comments or on twitter.

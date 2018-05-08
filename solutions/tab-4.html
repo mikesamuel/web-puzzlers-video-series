@@ -1,0 +1,44 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body, p { font-size: 24pt }
+    .sub { background-color: #ff888880 }
+    .add { background-color: #88ff8880 }
+    pre.prettyprint.lang-sh { border: 2px solid black !important; background: #80808080; display: inline-block; margin-left: .75em }
+  </style>
+  <body>
+    <h1>Solution 2: Leaky Bags of Properties</h1>
+
+    <center>
+      <p class="for:1-">Symbol properties are a band-aid.</p>
+
+      <p class="for:2-">They don't enable strong &ldquo;only&rdquo; stories.</p>
+
+      <pre class="prettyprint lang-js for:3" style="text-align:left; display: inline-block">
+       JSON.stringify(o, (_, v) =&gt; {
+         if (v && typeof v === 'object'
+             && !Array.isArray(v) && !v.toJSON) {
+           let nv = Object.assign({}, v)
+           for (let s of Object.getOwnPropertySymbols(v)) {
+             // Make sure we don't miss symbol keys.
+             nv[String(s)] = v[s]
+           }
+           return nv
+         }
+         return v
+       })</pre>
+
+      <p class="for:4-"><code class="prettyprint lang-js">this.#privateField</code>
+        addresses different problems.</p>
+
+      <p class="for:5-">Boxes do.</p>
+
+      <p class="for:6-">Complements data flow.</p>
+    </center>
+
+  </body>
+  <script src="../slide.js"></script>
+</html>
+

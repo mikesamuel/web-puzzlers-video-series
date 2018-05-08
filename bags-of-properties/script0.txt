@@ -1,0 +1,95 @@
+[TAB-0: codepen]
+
+Welcome and thanks for watching.
+This is the second in a series of Web Security Puzzlers.
+
+I'm splitting it into two parts.
+
+This video walks through the problematic code and what entails a
+successful attack, and the next one will show how it's vulnerable.
+
+The notes below include links to this code playground so you can run
+it in your browser, and there's also a link there to the last puzzler
+in case you missed it.
+
+If you just want to play with the code on your own, everything you
+need is in the notes, so enjoy.
+(By the way, I'd like to thank codepen for making it so easy to
+share these puzzles.  The "Fork" button at the top lets you
+make your own copy that you can save and come back to.)
+
+Please imagine that this code is part of a simple web service that
+might run on Node JS.  This code at the top lets it run in the
+browser.
+
+This exports the only public function, processJSON,
+which is what you're going to attack.
+
+[SCROLL DOWN]
+processJSON is defined down here at the bottom.
+It takes a string of JSON as input and returns a string of JSON.
+If there's an error, it logs it.  You can assume that the logs are
+collected somewhere.
+
+processJSON does some authentication.  For the purposes
+of this exercise, you are user a-1-2-3.
+It then calls process.
+
+Process looks at the type of request and then calls a helper.
+There are three kinds of requests:
+*  A request for another user's public profile.
+*  A request for the current user's private profile
+   which includes details that should be kept confidential.
+*  A request for a password reset leak.
+   (The actual code that handles setting a password is not
+    part of this puzzle).
+
+[SCROLL UP]
+At the top here, you see a user database.  Pretend that this is an
+in-memory cache of a database.  Again, you are user a123.
+
+Here's a table of defaults for unnamed accounts.
+
+Here's an in-memory cache of details about password reset requests.
+
+Next, for each type of request there's one function and some helpers.
+
+I'll let you explore the details of these, but it's worth pointing out
+that each of these takes information about the current user, and a
+"request" object which was decoded from JSON.
+
+You might also notice that each of them uses Object.assign.
+That's why this exercise is called "bags of properties."
+Object.assign combines properties from several sources into one object
+-- making sure the output bag contains each of the properties in the
+input bags.
+
+[SCROLL UP]
+Now that you've seen the code, I'll explain what it means to win.
+
+You win by changing a user record.  You can also win by forging a
+record.  Maybe account's are expensive.
+
+You can win by accessing another user's personal information.
+Remember, you're a123 and you shouldn't know other users' real names.
+
+You can win by leaking someone else's reset link.  Presumably this
+would let you take over another account.
+
+You can also win by making a string you know work as a reset link.
+
+You can win by preventing another user from using or resetting
+their account or by defacing their account.  Maybe by changing Bob's
+display name to something else.
+
+This list isn't exclusive.  If you find you can do something not
+listed here which seems clearly out of bounds, let me know in the
+comments on the next video.
+
+The next video (there's a link in the notes) will go through one
+successful attack and discuss problems with this style of code.
+
+Later in this series I'll discuss some ways to preserve security
+properties even when this practice is widespread.
+
+Happy hunting!

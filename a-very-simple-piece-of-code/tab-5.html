@@ -1,0 +1,58 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+.pquote {
+    width: 15em;
+    background: url(images/openquote.svg) top left no-repeat;
+    color: #030;
+    font-size: 18px;
+    line-height: 0.9;
+    /*font-style: italic;*/
+    padding: 13px;
+    font-size: 200%;
+}
+
+blockquote {
+    margin: 0;
+}
+
+p {
+  text-align: justify;
+}
+
+.pquote p:first-letter {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.main {
+    height: 100%;
+    width: 100%;
+    display: table;
+}
+.wrapper {
+    display: table-cell;
+    height: 100%;
+    vertical-align: middle;
+}
+  </style>
+  <body><dib class="main"><div class=wrapper>
+    <aside style="float: right; margin-right: 1em; margin-top: 3em" class=pquote><blockquote><p>
+      I would most likely glance at this code during review and then
+      <b>continue on without another thought</b>. The while loop with function call
+      might make me pause, as I'm sure there're more malicious things that
+      could be done with that.
+    </p></blockquote></aside>
+
+    <aside class=pquote style="margin-left:3em"><blockquote><p>
+      I spent more time on this than I typically would (per line of code) on a JS review.
+      All of the examples felt "bad" in some way, especially the last, but <b>problems were not obvious</b>.
+    </p></blockquote></aside>
+
+    <aside class=pquote style="margin-left: 1em"><blockquote><p>
+      I would recommend using an ES6 Map for capitals, or if that's not an option,
+      indexing into the object with hasOwnProperty.
+    </p></blockquote></aside>
+  </body>
+</html>

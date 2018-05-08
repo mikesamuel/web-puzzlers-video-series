@@ -1,0 +1,159 @@
+[TAB-0: codepen]
+Welcome.
+
+I'm going to explain one vulnerability in the code I walked through in
+the last video.
+
+If you haven't seen that, definitely take a look at that video and
+play around with the code by yourself first.  There are links to both
+in the video notes below.
+
+To recap.  We saw some server-side JavaScript that lets a user view
+their private profile, lets anyone view any user's public profile, and
+lets any user cause a reset link to be sent.
+
+The code manipulates bags of properties.  Instead of defining classes
+for concepts like User, Profile, Request, and PasswordResetLink, and
+then calling methods on those, it uses plain old JavaScript objects as
+collections of properties.
+
+Time to attack.
+Remember
+
+[HIGHLIGHT]
+// To win, violate security properties by passing primitives to processJSON.
+
+You can call processJSON multiple times.  If that wasn't clear,
+maybe pause and go give it another shot.  If you found a vulnerability
+that requires only one call, or a different one than I outline here,
+I'd love to hear from you in the comments.
+
+It's possible to do this:
+
+[HIGHLIGHT]
+// *  Leaking a resetLink other than one for a123's or getting it sent/written to a
+//    source other than the email of record for that account.
+
+First, I request a reset link.
+
+[TYPE] processJSON(`{ "type": "pwd-reset", "userId": "b678" }`)
+
+And it logs: Sent password reset email to b678
+
+Then I request the public profile in a way that generates an error.
+
+[TYPE] processJSON(`{ "type": "public", "userId": "b678", "realName": "" }`)
+
+and I get an error in the log.  You may have to scroll right to see
+all of it.
+
+Remember, the goal was to get the reset link to a source other than Bob's
+email.
+
+Historically, server logs have been less carefully protected than
+databases.  This is a bit of a blind spot security-wise.  It is often
+far easier for an attacker to read log files than a database or
+secrets in memory.
+
+[TAB-1]
+For more info, see the link in the notes to Carnegie-Mellon's Software
+Engineering Institute which says:
+
+> Logging is essential for debugging, incident response, and
+> collecting forensic evidence. Nevertheless, logging sensitive data
+> raises many concerns, including the privacy of the stakeholders,
+> [etcetera.]
+>
+> Unfortunately, violations of this rule are common.
+
+
+[TAB-0: codepen]
+
+So why does this attack work?
+Here's getPasswordResetLink
+
+Why is the reset link part of the public profile?
+That's because of a quirk of how Object.assign works.
+The first argument is the output, not just another input that's
+copied into a blank object.
+
+This call to Object.assign bundles inputs to an email template.
+Maybe the author forgot to type curly-brackets comma.  Elsewhere they
+do, but it's an easy mistake to make, and the kind of thing that a
+tired code reviewer might miss.
+
+Since the user record is cached in-memory, the same value is used
+by the second call to processJSON.
+
+The first call allocated a password reset link, which due to an
+easily overlooked bug, got attached to a long-lived object.
+
+The second call included a "realName" field.
+getPublicProfile double checks that realName is not leaked
+This is normally a great practice.
+
+But then Object.assign combines the user record and the request,
+ostensibly to make sure that the client gets appropriate display
+preferences.
+
+The sanity check throws, which bubbles up to processJSON, letting me
+get the user record into the log.
+
+This logging string dumps a lot of information.  It's not triggered
+in the normal course of events.  Maybe it was left on in production
+code by mistake.
+
+The end result is that I took two actions that required no
+authentication and managed to leak something that might allow me
+to hijack an arbitrary account due to a bug that is easy to miss.
+
+[TAB-2: wrapup]
+[FWD]
+This is a contrived example, but hopefully it convinces you that
+this bags of properties approach has risks.
+
+[FWD]
+First, it makes it far too easy to mix trusted properties with
+untrusted properties.  In this case, realName is normally just a
+property on a user object, but I put it on the request object
+triggering a code path that is probably not well tested --
+the if('realName' in result).
+That code path is normally an excellent thing to have.  It would
+prevent a leak of realName.
+
+[FWD]
+Another risk is that sensitive properties are no different
+from insensitive properties.
+If the user had to write a toString method for userData, they might
+have chosen to stringify displayName, but not resetLink.
+
+[FWD]
+The third risk is that it's not obvious what gets mutated.
+If all changes happen via calls to `this.property` equals,
+inside methods, then you probably won't get a reset link property
+on user data by accident.
+
+[FWD]
+One way to address this problem is to not use bags of properties.
+That's a fine design decision, but in large systems some parts use
+this approach.  Even in static languages, template systems tend to
+take HashMaps with string keys, and configuration objects are often
+bags of properties.
+
+And there are reasons for this.  This sample is less than 100 lines
+of code, but does a lot.  A class based approach would probably
+require several times that.
+
+Another way to deal with this problem is to treat sensitive properties
+differently.  JavaScript symbols are a great way to do this.
+JSON.stringify ignores properties whose keys are symbols, so using a
+Symbol for the reset link URL and for realName would improve this
+code.
+
+I'm going to argue later that we need a consistent way to represent
+sensitive and privileged values.
+I'll go into that in detail later.
+
+Next though, a third-security puzzler.
+
+Thanks for watching.

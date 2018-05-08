@@ -1,0 +1,194 @@
+TAB [0]
+
+Welcome and thanks for watching.
+This is the first in a series of web security puzzles.
+I'm using these puzzles to explain language tweaks that might help
+developers write more secure programs.
+By the way, there are links in the notes if you want to run the code
+in your browser and play with it.
+
+Here's a simple JavaScript program.
+It has a table with some capital cities for US states and Canadian
+provinces.
+This function looks up an entry in that table.
+The table is mostly static, but Alabama's capital hasn't always been
+Montgomery so this code returns the capital given the year.
+Here, if capitalOf gets a function from the table, it passes the year.
+
+I'd like to contrast this program with one in a more static language.
+
+[TAB 1]
+
+Here's a program in a static language, Go.
+There's also a link in the notes to the Go playground if you want to
+play around with it in your browser.
+
+[TAB 2]
+
+If I rearrange the whitespace, you can see that the difference between
+the two is pretty small. The bulk of the difference is Go's extra type
+syntax and some module boilerplate.
+
+I'm going to try to accurately describe what each version does.
+I'm going to be super-pedantic to make a larger point.
+
+[TAB 3]
+
+For Go, it's straightforward.
+
+capitalOf takes two abbreviations takes two abbreviations and a year
+returns the name of the capital.
+
+[TYPE capitalOf('US', 'MB')]
+
+But, if I ask for an invalid state I get a special value.
+So I'll add some caveats.
+
+[TYPE and talk]: This is best effort, if the answer is unknown, returns "nil"."
+
+[TYPE and talk]: Capitals are up-to-date as of January 2017.
+
+There aren't any other corner cases for Go.
+I wrote a simple function, and I found a simple description of its
+behaviour.
+
+[TAB 4]
+
+How well does this description work for the JavaScript version?
+
+Since JavaScript coerces values, there are more corner cases:
+
+[TYPE and talk]
+  // If year is not a number or 4-digit decimal string, you might get
+  // the wrong capital back.
+
+Here the JavaScript code uses the country to find the state table.
+But the country table is an object with its own prototype.
+What happens when I lookup a property on the prototype?
+
+[TYPE] capitalOf('constructor', 'name')
+
+I need to document what happens:
+
+[TYPE and talk]
+  // If the country is 'constructor', and the state is 'name',
+  // returns 'Object'.
+
+[TYPE] capitalOf('constructor', 'constructor')
+
+What happens if both are constructor?  It returns undefined.
+That's odd.  It explicitly returns a placeholder value "nil"
+at the bottom, but here I'm getting the special value "undefined."
+
+If you haven't played around in the code pen yet, this would
+be a good time to pause the video and follow the link in the notes.
+Figuring out why this happens might suggest some security problems.
+
+<PAUSE>
+
+The previous result gave you a hint.  In JavaScript, capital-f "Function"
+takes a string and parses it as a JavaScript function.
+The next time through the loop it calls the created function.
+Can I use this to actually execute code?
+
+Whoops!  I'd better document that behavior.
+
+[TYPE and talk]
+  // If country and state are both 'constructor', compiles the string
+  // value of year as a JavaScript FunctionBody in the global scope,
+  // executes it, and returns any result it returns.
+
+My description of this function's now has to include,
+by reference, a large chunk of the JavaScript language specification.
+
+For the Go code, there's a simple, straightforward description of
+capitalOf's behavior.
+For the JavaScript code, there is no simple, straightforward description
+of its behavior.
+
+Worse, an attacker who controls the inputs to this seemingly simple
+JavaScript program can run arbitrary code, *even though* the code
+never mentions `eval`, or `Function`.
+
+Many skilled code reviewers wouldn't notice this.
+
+If there's any way an attacker can cause two property accesses
+followed by two function calls with keys and arguments they control,
+then they can execute arbitrary code.  These two property accesses and
+two function calls need not happen in the same function, so local code
+review won't catch all vulnerabilities like this.
+
+[TAB 5]
+
+I presented this problem to two mailing lists, one for Google
+engineers who write a lot of JavaScript, and one for Web Security
+professionals.  They knew ahead of time that they were looking at a
+web security puzzle, and reported spending more time on this than
+routine JS reviews.  Even so, only slightly more than 50% realized
+there was a problem.
+25% said they saw no need for concern at all.
+About a third of reviewers came up with a concrete reason for a
+rewrite.
+Here are some of their comments.
+
+[TAB 4]
+
+The table of capitals looks like it's just about capital cities, but
+in JavaScript, square brackets don't just return info about capitals,
+they also return information about the type used to represent the table.
+
+This is relevant to security because of another quirk: in JavaScript,
+big-F Function is also overloaded to turn a string into runnable code.
+
+This is a contrived example, but it illustrates a general problem:
+widely used features of the language (square brackets and functions
+as values) have complex meanings that can combine in subtle ways
+to break security.
+
+[TAB 6]
+
+Some saw this and suggested better linters and type systems.
+These are great tools, but they do not address this problem.
+ESLint does not flag anything in this code as a security issue.
+
+If you translate this program to TypeScript, it has the same problem
+because TypeScript compiles it to equivalent JavaScript.
+TypeScript does warn if you try to pass a string in for year.
+That's great!  But TypeScript allows unchecked casts,
+so we still cannot rely on year being a number even.
+
+[FWD]
+Even if we shut off specific problems like capital-F Function, the
+problem remains that simple code does not have a simple contract.
+
+[FWD]
+Design-by-contract and code review are not sufficient to produce
+secure programs.
+
+I'm a security engineer; I work to make it easier to produce secure
+software.  We have more experience explaining what it takes for
+something like the Go code snippet I showed to be secure.  I love
+JavaScript though, and am trying to find better ways to come up with
+*security stories* for dynamic systems.
+
+[FWD]
+We need ways to limit the damage when code doesn't meet its contract.
+We security engineers have gone as far as we can with unassisted
+review and unsound tools.
+
+[FWD]
+In the next few videos, I'm going to present more security puzzles
+and their consequences for security in dynamic systems.
+
+[FWD]
+Later, I hope to convince you that two simple mechanisms would allow
+small amount of carefully crafted code to uphold its contract
+regardless of the actual behavior of the vast majority of code.  I
+hope to also convince you that this is sufficient for many important
+security stories.
+
+[FWD]
+If you're worried about this kind of thing in *your* code,
+Content-Security-Policy can help on the browser side.  On the Node.js
+side, the `--disallow-code-generation-from-strings` flag will do the
+same.  These are the best options available today.

@@ -1,0 +1,35 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body { font-size: 20pt }
+    body { padding: .25em }
+  </style>
+  <body>
+    <h1>Thanks for watching!</h1>
+    <blockquote>
+      <p class="for:1-6">There are some problems with using &ldquo;bags of properties.&rdquo;
+      <p class="for:1-6">Code reviewers may have to work harder to determine:
+        <ul style="margin-top:0">
+          <li class="for:2-6">when a bag contains properties from an <b>untrusted source</b>
+            <br>(this can lead to careless mixing of trusted and untrusted properties),</li>
+          <li class="for:3-6">when a bag contains <b>sensitive properties</b> that need to be treated with care,</li>
+          <li class="for:4-6">whether an <code class=prettyprint>Object.assign</code> or <code class=prettyprint>$.extend</code>
+            call <b>reads from or writes into</b> a bag.</li>
+        </ul>
+
+      <p class="for:5-6">To mitigate:
+        <br><code style="white-space: pre" class="prettyprint">const URL_KEY = Symbol('url')   // Define a symbol key
+let obj = { [URL_KEY]: secret } // Symbols not stringified</code>
+      </p>
+
+      <p class="for:6">Next: another puzzle!</p>
+
+      <p class="for:6">Later: towards better security stories.</p>
+
+      <p class="for:6"><i>twitter.com/mvsamuel</i></p>
+    </blockquote>
+  </body>
+  <script src="../slide.js"></script>
+</html>

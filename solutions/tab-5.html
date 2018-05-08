@@ -1,0 +1,41 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body, p { font-size: 24pt }
+
+    .step-1 #story-element-1,
+    .step-2 #story-element-2,
+    .step-3 #story-element-3 {
+      background: #ddffdd80
+    }
+  </style>
+  <body>
+    <h1>Solution: XSS in Legacy Code</h1>
+
+    <p>The HTML is safe to serve to users because:</p>
+    <blockquote class="for:0-4">
+      <ul>
+        <li>
+          Our HTML templates have been reviewed so that the distinction<br>
+          between contributed content and site content is clear to
+          users.
+        </li>
+        <li>
+          The <code>html</code> template tag <span id="story-element-3"><u>only</u>
+            lets <tt>TrustedHtml</tt> values</span> specify<br>markup elements.
+          Other values can only specify HTML text nodes.
+        </li>
+        <li>
+          <u>Only</u> modules on the <i id="story-element-1">TrustedHtmlProducer</i> list
+          <span id="story-element-2">can create <br><tt>TrustedHtml</tt> values</span>.
+        </li>
+        <li>
+          All such modules have been <u>carefully reviewed</u>.
+        </li>
+      </ul>
+    </blockquote>
+    <script src="../slide.js"></script>
+  </body>
+</html>

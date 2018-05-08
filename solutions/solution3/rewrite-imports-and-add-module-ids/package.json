@@ -1,0 +1,14 @@
+{
+  "name": "rewrite-imports-and-add-module-ids",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "author": "mikesamuel",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "babel": "^6.23.0"
+  }
+}

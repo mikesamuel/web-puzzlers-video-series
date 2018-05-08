@@ -1,0 +1,36 @@
+[TAB-0]
+
+Welcome!
+
+[FWD]
+In this video series, I'm going to present some puzzles.
+
+[FWD]
+All of these relate to JavaScript and web security.
+
+For each puzzle, you'll find a link in the video notes to code that you can play around with in your browser.
+Each puzzle defines one public function that takes a string.
+Your goal is to find a string input that violates some security assumption.
+
+[FWD]
+My goal isn't to teach developers how to identify bugs that leave their users' vulnerable.
+
+I want to identify ways to produce secure systems even when there are bugs.
+
+[FWD]
+Security is a team effort.  I work on Google's security engineering team.
+We work to reduce the burden on developers by improving tools, libraries, and programming languages.
+
+I've worked on JavaScript tools like compilers, linters, template languages, and sandboxes.
+And on the security implications of language design decisions in JavaScript --
+finding the bad parts that don't make it into Doug Crockford's book.
+
+[FWD]
+After the puzzles, there's another video that will talk about the problems underlying these puzzles,
+and how to get security even when developers make common mistakes.
+
+I'll then get into some specific language level proposals that I think will help security specialists and developers work together efficiently.
+
+[FWD]
+Thanks for watching!  And enjoy the puzzles.
+You can find all the links you need to get started in the video notes below.

@@ -1,0 +1,53 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body, p { font-size: 24pt }
+  </style>
+  <body>
+    <h1>Solution 1: Implicit <tt>eval</tt></h1>
+
+    <pre class="prettyprint lang-html for:0">
+&lt;html&gt;
+  &lt;meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'sha256-nagH1y6w09IppZ08tNC6dzpI8GbGWl4LOkVczF/OUY0='
+             'sha256-5lgvbxNigxEpfSngMbVMAJBtPqRU1C0hcchrghRwxBQ=';
+  "&gt;
+  &lt;script&gt;
+    var capitals = {
+      "CA": {
+        "AB": "Edmonton",
+        "BC": "Victoria",
+        "MB": "Winnipeg",
+        // etc.
+      },
+
+    function capitalOf(country, stateOrProvinceName, year) {
+    &hellip;<span style="display:none"</span>&lt;/script&gt;</span>
+</pre>
+
+    <pre class="prettyprint lang-html for:1">
+    &hellip;
+  &lt;/script&gt;
+  &lt;script&gt;
+    [
+      ['US', 'AL', 1900],
+      [<b>'constructor', 'constructor', 'alert(1)'</b>],
+    ].forEach(args =&gt; {
+      console.group(JSON.stringify(args));
+      try {
+        console.log(<b>capitalOf(...args)</b>);
+      } finally {
+        console.groupEnd();
+      }
+    })
+  &lt;/script&gt;
+</pre>
+
+    <img src="images/solution1-console.png" class="for:2">
+
+    <script src="../slide.js"></script>
+  </body>
+</html>

@@ -1,0 +1,44 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>body { font-size: 13pt }</style>
+  <body>
+    <pre class="prettyprint lang-js">
+
+
+
+var capitals = {
+  "CA": {
+    "AB": "Edmonton",
+    "BC": "Victoria",
+    "MB": "Winnipeg",
+    // etc.
+  },
+  "US": {
+    "AL": (year) => {
+      if (year < 1846) { return "Tuscaloosa"; }
+      return "Montgomery"
+    },
+    "AK": "Juneau",
+    "AR": "Phoenix",
+    // etc.
+  },
+}
+
+function capitalOf(country, stateOrProvinceName, year) {
+  var m = capitals[country]
+  if (m) {
+    var capital = m[stateOrProvinceName]
+    if (capital) {
+      for (; typeof capital == 'function';) {
+        capital = capital(year)
+      }
+      return capital
+    }
+  }
+  return "nil"
+}
+    </pre>
+  </body>
+</html>

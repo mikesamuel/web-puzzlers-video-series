@@ -1,0 +1,189 @@
+<html>
+  <title>Code Overlay</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    #thecodes { position: relative }
+    #gocode, #jscode { position: absolute; top: 0; left: 0; background: transparent }
+    .header { position: absolute; text-align: center; width: 100%; display: block; font-family: serif; font-size: 200% }
+    pre { margin-top: 0 }
+    body { font-size: 13pt }
+  </style>
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <body><div id=thecodes><pre id="gocode" class="prettyprint lang-go"><span class="header nocode">Go Code</span>package main
+import ("fmt"; "reflect";)
+
+var capitals = map[string]map[string]interface{}{
+  "CA": {
+    "AB": "Edmonton",
+    "BC": "Victoria",
+    "MB": "Winnipeg",
+    // etc.
+  },
+  "US": {
+    "AL": func(year int) string {
+      if (year < 1846) { return "Tuscaloosa"; }
+      return "Montgomery"
+    },
+    "AK": "Juneau",
+    "AR": "Phoenix",
+    // etc.
+  },
+}
+
+func     capitalOf(country string, stateOrProvinceName string, year int) string {
+  var m = capitals[country]
+  if (m != nil) {
+    var capital interface{} = m[stateOrProvinceName]
+    if (capital != nil) {
+      for  ; reflect.TypeOf(capital).Kind() == reflect.Func     ;  {
+        capital = (capital.(func (int) string))(year)
+      }
+      return capital.(string)
+    }
+  }
+  return "nil"
+}
+
+
+func     printCapitalOf(c string, p string, y int) {
+
+  var handleError = func     (ex interface{}) {
+    fmt.Printf("Recovered from %s", ex)
+  }
+  defer func() {
+    if r := recover(); r != nil {
+      handleError(r)
+    }
+  }()
+  fmt.Printf("{ %s, %s, %d }\n", c, p, y)
+
+    fmt.Printf("=> %s\n", capitalOf(c, p, y))
+
+}
+
+func     main() {
+  var tests = []struct {
+    country  string
+    province string
+    year     int
+  }{
+    { "CA", "BC", 0 },
+    { "US", "AK", 0 },
+    { "US", "AL", 1819 },
+    { "US", "AL", 1919 },
+    { "US", "AK", 1775 },
+    { "US", "MB", 0 },
+    { "WX", "YZ", 0 },
+    { "constructor", "name", 0 },
+    { "US", "toString", 2000 },
+    { "constructor", "constructor", 0 },
+//  { "constructor", "constructor", `console.error("Pwned"); return 6*7` },
+  }
+  for  _,  t := range tests  {
+
+    printCapitalOf(t.country, t.province, t.year)
+  }
+}
+</pre><pre id="jscode" class="prettyprint lang-js"><span class="header nocode">JS Code</span>var nil
+
+
+var capitals =                                  {
+  "CA": {
+    "AB": "Edmonton",
+    "BC": "Victoria",
+    "MB": "Winnipeg",
+    // etc.
+  },
+  "US": {
+    "AL":     (year    ) =>     {
+      if (year < 1846) { return "Tuscaloosa"; }
+      return "Montgomery"
+    },
+    "AK": "Juneau",
+    "AR": "Phoenix",
+    // etc.
+  },
+}
+
+function capitalOf(country       , stateOrProvinceName       , year    )        {
+  var m = capitals[country]
+  if (m != nil) {
+    var capital             = m[stateOrProvinceName]
+    if (capital != nil) {
+      for (;         typeof capital         ==        'function';) {
+        capital =  capital                     (year)
+      }
+      return capital
+    }
+  }
+  return "nil"
+}
+
+
+function printCapitalOf(c       , p       , y    ) {
+  const fmt = { Printf: console.log };
+  var handleError = function (ex            ) {
+    fmt.Printf("Recovered from %s", ex)
+  }
+
+
+
+
+
+  fmt.Printf("{ %s, %s, %d }\n", c, p, y)
+  try {
+    fmt.Printf("=> %s\n", capitalOf(c, p, y))
+  } catch (ex) { handleError(ex) }
+}
+
+function main() {
+  var tests = [
+
+
+
+
+    [ "CA", "BC", 0 ],
+    [ "US", "AK", 0 ],
+    [ "US", "AL", 1819 ],
+    [ "US", "AL", 1919 ],
+    [ "US", "AK", 1775 ],
+    [ "US", "MB", 0 ],
+    [ "WX", "YZ", 0 ],
+    [ "constructor", "name", 0 ],
+    [ "US", "toString", 2000 ],
+    [ "constructor", "constructor", 0 ],
+    [ "constructor", "constructor", `console.error("Pwned"); return 6*7` ],
+  ]
+  for (var t of       tests) {
+    const [ country, province, year ] = t
+    printCapitalOf(  country,   province,   year)
+  }
+}
+
+main()
+</pre></div>
+<script>(function () {
+  let jscode = document.getElementById('jscode');
+  let gocode = document.getElementById('gocode');
+  gocode.style.opacity = 0;
+  let i = 0;
+  setInterval(
+    function () {
+      let n = i;
+      i = (i + 1) % 101;
+      let jsopacity, goopacity;
+      if (25 <= i && i <= 50) {
+        goopacity = (i - 25) * .04;
+        jsopacity = 1 - goopacity;
+      } else if (75 <= i && i <= 100) {
+        jsopacity = (i - 75) * .04;
+        goopacity = 1 - jsopacity;
+      } else { return; }
+      jscode.style.opacity = jsopacity;
+      gocode.style.opacity = goopacity;
+    },
+    50);
+}());
+</script>
+</body>
+</html>

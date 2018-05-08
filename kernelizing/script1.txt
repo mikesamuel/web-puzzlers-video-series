@@ -1,0 +1,340 @@
+[TAB-0]: security stories
+[FWD*9]
+Welcome.
+
+Last time, I asked this question: Given the givens, how can developers
+and security specialists work together efficiently to produce secure
+software?
+
+I'm going to answer it in this video.
+First I'll talk about how security engineers make static systems more
+secure.
+Then I want to talk about how to do the same thing for highly dynamic
+systems.
+This talk is more abstract than previous ones, so the next, last video
+in this series will show how this might work in practice by showing
+the specific changes to the puzzles that get at the underlying issues.
+
+[TAB-1]: security stories
+When designing systems, security engineers like me tell "security stories".
+
+[FWD]
+Here are some.  The details aren't relevant to the point I'm trying to
+make, so I'm going to go quickly.
+
+This story talks about how we know that the right code runs in
+production.  Remember the first puzzler which let an attacker run
+arbitrary code.
+
+[FWD]
+The second talks about keeping a sensitive value from leaking
+as happened in the second puzzler.
+
+[FWD]
+The third talks about why HTML that includes characters from an
+untrusted source is safe to run in the browser, which relates
+to the third puzzle.
+
+Once security engineers have a story, we check whether they're true.
+Where they're not, we re-engineer.
+
+[FWD]
+I'd like you to focus on the bolded text.
+
+[FWD]
+"Only sources", "only available", "only called", and "only serve HTML" --
+this says that there are some APIs that could be used incorrectly
+but we know that they're not.  Some APIs come with caveats -- if you do
+this, you also have to do that -- only ever pass inputs that have some
+property -- only use the output in such and such a way.
+
+Some of these APIs can't really be made simpler.
+
+Writing documentation and hoping that the right people read and
+understand it is not a strong security story.
+
+But limiting the amount of code that uses error-prone APIs, lets us
+bring other techniques to bear.
+
+[FWD]
+Next, you see phrases like "carefully reviewed".  Here I'm saying
+that some aspects of security can't be checked by programs so we rely
+on human judgement.  Humans are slow and a small group of experts
+can't review every line of code in a large program that is rapidly
+evolving.  We need to limit the amount of code that needs review.
+
+Most code does not need access to any particular error-prone API,
+so if we can prevent them from being used except by files on a small
+list, then we can focus human judgement.
+
+We whitelist uses of sensitive APIs, carefully review the uses,
+and record the judgements in source control.
+
+[FWD]
+Finally, phrases like "finishes building", and "before untrusted
+inputs" refer to the life cycle of a project.
+
+In very static systems, untrusted inputs can't affect some things.
+Parts of the system go from being mutable to immutable.
+For example, the size of each instance of a particular Java class is
+fixed when the compiler runs which *happens before* a Java service
+starts accepting input.
+
+An attacker can't add a property to a Java object since there's
+nowhere to put its value.
+
+I've explained some common elements that I've seen in many security
+stories.  I'd like to talk a bit about how we engineer systems so that
+those stories work.
+
+[TAB-2]:
+But first, I've contrasted "static" and "dynamic" without explaining
+what I mean.  These terms often come up when people talk about type
+systems, but that's not how I use it.  I define dynamism in terms of
+what an input can affect.
+
+[FWD]
+For example, JavaScript code loading is quite dynamic because string
+values can be turned into code even when code doesn't use special
+libraries.
+
+[FWD]
+CommonJS modules are more dynamic than ES6 modules because
+a string input can determine which module gets loaded.
+
+[FWD]
+JavaScript classes are more dynamic than Java classes because fields
+can be added to and removed from instances and prototypes after the
+class declaration finishes.
+
+But new-style JavaScript classes are less dynamic than old-style
+code that added to prototypes because dynamically setting the
+prototype field cannot change a super type.
+
+[TAB-3a]:
+Using that definition, I'd like to talk briefly about how security
+engineers approach security stories in static systems and how we
+might adapt to highly dynamic systems.
+
+[FWD: Picture hooking into build system]
+In a static language, a developer makes a change and recompiles
+their code.
+
+[FWD]
+We tweak the compiler, linker, and run analyzers to get information
+about problematic code patterns, and uses of dangerous APIs.
+That information is available to the code review tool.
+
+[FWD]
+If there's a new use of a problematic API, we loop in a domain
+specialist.
+
+[FWD]
+They might approve the use.  Then we record that decision
+in source control.  Or they might recommend a safer library.
+
+Done well, this makes it easy for a small security team to intervene
+in a very targeted way, and help developers produce secure, robust
+code.
+
+This works well for very static code, because there's this explicit
+step, the build stage, where we know what potentially dangerous
+functions code could call.
+
+[TAB-3]
+Here on the left you can see some of the phrases that keep showing up
+in security stories.
+
+[FWD]
+So by tightly integrating with the toolchain, we can check
+requirements of the form "only these connect to that".  There are also
+often language features like `private` that help.
+
+[FWD]
+We capture human judgement in source control, and
+check that only reviewed code does certain things.
+Tight integration with code review tools detects
+when review is needed, auto-assigns reviewers, and
+makes this whole process pretty smooth.
+
+[FWD]
+We avoid problematic uses of reflection by making the build pipeline
+more flexible.  For example, we can automagically generate code to
+sync databases and object and prevent SQL injection.
+These techniques don't work as well if you don't have a tightly
+integrated build system, or are working with an uncompiled language.
+
+This is one reason why Google has favored frontend code in Closure and
+GWT which feel like static languages.
+
+I'd like to propose an alternative.  Instead of making JavaScript into
+a mostly static language with unsound tools, lets focus on enforcing
+security stories while preserving JavaScript's strengths.
+
+[FWD]
+First, instead of reinventing static data access like `public` and
+`private` using unsound linters, let's make access decisions dynamic.
+
+JavaScript has many fine module systems that are now widely available.
+Security engineers like me can check many stories that hinge on
+"only these talk to that".
+Representing a module identity as a runtime value makes that
+straightforward.
+
+This goes a long way to addressing many of the underlying problems
+in the web puzzlers I presented.
+
+Preventing unwhitelisted code from invoking the parser on a string
+addresses the first puzzle.
+
+If the code that populates the email template can access the text
+of the password reset link, but other code can't then I have
+addressed the second puzzle.
+
+I can fix the third puzzler by making the safeness of the values in
+the legacy names table part of those values so that the html template
+can decide whether to escape purely by looking at the value.
+
+I'll get into more detail in the next and last video where I explain
+in detail how to reify module identity -- sorry, "to reify" means to
+represent a concept as an object or value.
+
+[FWD]
+For dynamic systems we also need a way to enforce human judgements
+about code.
+
+Once we have a concept of module identity, we can represent
+human judgements as lists of modules.
+
+We need one more thing.  In Node JS and maybe on the browser,
+builtin modules connect code to the outside world, so some
+imports connect us to power that might be misused.
+If we want to bring human judgement to bear on how to wisely use
+powerful tools, then we need to be able to judge *import*s.
+
+Very few modules need direct access to child_process, for example, but
+every one that uses a dynamic require or import could potentially load
+it.  If it's important to keep eval away from most code, (and it is),
+then it is important to restrict shell access to only modules that
+need it do to their job and which take appropriate care.
+
+This pattern repeats itself.  In google code, there are unsafe
+APIs that need to be used carefully.  There are other APIs that
+wrap them carefully to provide safe abstractions.
+Very few modules need access to any particular unsafe module,
+but some do.
+We bring human judgement to bear -- those who understand how
+to use the unsafe APIs vet code that would use them.
+Many times, we talk to the developer and find that safer APIs
+actually do do what they need.
+
+[FWD]
+"Finishes ... before ..." arguments work really well for static
+systems with a well-defined lifecycle.  First you compile the code,
+then you link it, then you load it, then it looks at flags, and
+finally it starts talking to other processes.
+
+I don't think dynamic systems really need this tool.
+If they do, an application *could* define a lifecycle, represent
+lifecycle stages as values, and allow the main module to advance from
+the current stage to a less privileged stage.
+
+[TAB-3a]
+[FWD * 5]
+In contrast with the workflow diagram earlier:
+
+There's no static compiler or linker that knows which code uses
+which sensitive APIs.  There are many tools out there like
+Closure Compiler, Babel, and WebPack which do similar things
+but, like linters, their analyses are optimistic.
+
+Instead of relying mainly on unsound static tools, I think
+we should prefer dynamic enforcement that fails safe.
+
+A module loader runs when one file requires, imports or sources
+another.
+
+[FWD]
+The test runner can build a dynamic import graph which shows
+which modules load sensitive modules when the system is
+not under attack.
+
+That graph can be automatically checked against a whitelist
+in source control.
+Running the tests, *before* untrusted inputs reach the system,
+turns up any missing whitelist entries.  Continuous integration
+tools can loop in a human just the way we do for static systems.
+
+In production, the module loader then enforces the whitelist.
+If, for example, the colors module tries to load child_process,
+which didn't happen during testing, the module loader might
+throw an error or substitute a less powerful module with an
+equivalent interface.
+
+Here's an example of what I mean by a module import graph.
+This was derived by adding a few lines of code to the node
+runtime.  It shows the import graph for a very simple Node
+JS program that used a variety of conditional and dynamic imports.
+There's an arrow for each "require" *from* the module that does
+the loading *to* the module that is loaded.
+
+package dot JSON specifies index dot js as the main module
+and here's the code for index dot js which loads modules
+dynamically, lazily, and optionally.
+
+So, in the static case, compilation fails early on a violation.
+In the dynamic case, it fails safe in production, but test suites
+with good coverage still get you early failures in most cases.
+
+In *both* cases, this meshes will with continuous integration to
+make efficient use of targeted human judgement.
+
+
+[TAB-4]:
+
+I hope I've convinced you that we can improve software security
+in dynamic systems.
+
+Here's what I've asserted in a nutshell.
+
+[FWD]
+Limiting access to misusable tools limits what an attacker can exploit.
+
+Strong security stories depend on knowing which code can access which
+powers, but in highly dynamic systems, we can't reliably know what
+powers are accessed until the code is running in production.
+
+Product teams need to be able to control access -- most pieces of code
+only intentionally use a few of the many powers available.
+
+So we've got to move past binary trust decisions.  Few want to trust
+their whole whole program to call new Function but that's what
+happens.  It'd be better to trust some modules with that power.
+
+[FWD]
+Unless human judgements about code live alongside the code,
+and unless those judgements are enforced, security stories
+become obsolete as code changes.
+But lightweight policies that are enforced at runtime stay
+in sync with code changes.
+
+[FWD]
+Many security stories are easier to enforce if the identity of
+a critical piece of code is available as a value.
+
+[FWD]
+Builtin modules affect the outside world.  For example, child_process
+can execute arbitrary shellcode as the current user.
+
+Module loader hooks can strengthen security stories about the outside
+world while also enforcing access to sensitive internal APIs.
+
+[FWD]
+This video is different from previous ones.  It was heavy on theory
+and light on actual code.
+
+In the next video, I'll get concrete again and show how to address the
+core problems underlying each security puzzle by separating the
+correctness of the majority of code from the security of the system.
+
+Thanks again for watching.

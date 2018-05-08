@@ -1,0 +1,38 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body, td, th { font-size: 18pt }
+    tr { vertical-align: top }
+    td, th { padding: .5em; height: 5em }
+    table { margin: -5.5em 1em 0 1em }
+    .fig {
+      border: 1px dotted black;
+      background: #ffffff40;
+    }
+
+    #fig1 {
+      background-size: 886.5px 585.75px
+    }
+
+    .fig, #fig1 {
+      width: 886.5px;   /* 1182 */
+      height: 585.75px;  /* 781 */
+    }
+    body.step-1 #fig1 { background-image: url('images/figure-security-review-static-1.png') }
+    body.step-2 #fig1 { background-image: url('images/figure-security-review-static-2.png') }
+    body.step-3 #fig1 { background-image: url('images/figure-security-review-static-3.png') }
+    body.step-4 #fig1 { background-image: url('images/figure-security-review-static-4.png') }
+    body.step-5 #fig1 { background-image: url('images/figure-security-review-dynamic.png') }
+  </style>
+  <body>
+    <center>
+      <h1>Tools Integration</h1>
+
+      <div class="fig for:0-5"><div id="fig1"></div></div>
+    </center>
+
+    <script src="../slide.js"></script>
+  </body>
+</html>

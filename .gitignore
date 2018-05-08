@@ -1,0 +1,6 @@
+*~
+.DS_Store
+node_modules
+/depot_tools
+/chromium
+/init_chrome_dev.sh

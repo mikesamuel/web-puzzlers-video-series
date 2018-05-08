@@ -1,0 +1,99 @@
+[TAB-0]
+
+Welcome.
+
+Now I'm going to explain one vulnerability in the code you saw in the
+last video.
+
+If you haven't seen that, definitely take a look at that video and
+play around with the code by yourself first.  There are links to both
+in the video notes below.
+
+You were looking for an XSS in some code that uses html backtick to
+generate a string of HTML.
+
+There were a few dodgy bits of code.  First, the escape function
+doesn't escape all of the characters with special meaning in HTML.
+Second, the html function has some complex regular expression logic
+that disables escaping.  Third, the strip tags function tries to parse
+HTML with regular expressions.  Fourth, there's some application logic
+that has special handling for some accounts.
+
+This gives you a lot of places to look for a problem.
+If you didn't find any problems, don't feel bad.
+This was meant to be pretty subtle.
+I'm going to show you one problem.  If you found others, please let me
+know in the comments.
+
+One big red flag, if I was reviewing this, would be the way two
+different bits of logic deal with legacyUserId.
+
+[TYPE] render(`{ "legacyUserId": 85322 }`)
+
+shows the Alice in pretty colors.
+
+And that works because, down here, the template uses the double
+dollar-sign form.  Remember, last time I showed how escaping is
+disabled for double-dollar-sign expressions.
+
+[TYPE] html`x ${"<b>foo</b>"} y`
+Normally, the result of dollar curly is escaped.
+
+[TYPE] html`x $${"<b>foo</b>"} y`
+But with two dollar signs, it's not.
+
+So this double-dollar-sign isLegacyUser bit checks whether legacy user
+id is a legacy user, and if so, lets it through unescaped.  This seems
+safe, because up here "properNoun1" is a string from a lookup table
+when legacyUserId keys into that table.
+
+When might isLegacyUser return true, but properNoun1 not be a value
+from that lookup table?
+
+Notice that the first assignment to "legacyUserId" uses a
+"+" sign to convert to a number, but there's no "+" sign down here.
+
+[TYPE] render(`{ "legacyUserId": "85322" }`)
+I can pass a string for legacyUserId.
+
+[TYPE] render(`{ "legacyUserId": "85322.0" }`)
+If I pass a different string that coerces to the same number,
+the render function doesn't find the value in the lookup table.
+
+[TYPE] render(`{ "legacyUserId": "85322.0", "properNoun1": "<script>alert(parent.render)</script>" }`)
+And I can fit a payload in properNoun1 that shows code reaching back
+into the parent window.
+
+[TAB-1]: wrapup
+
+The author wanted to treat some values as privileged.  The HTML
+strings in legacyNames should be exempt from escaping, but input dot
+properNoun one should not.
+
+The underlying problem here is that privilege is not granted based on
+the nature of the value.  The html funcion decides how much escaping
+to do based on whether there are two dollar signs in the template.
+As in this example, the code that decides what value to use can be
+out of sync with the the code that decides whether to treat the
+value as privileged.
+
+This is a contrived example, but lots of legacy code has similar
+problems.  Legacy code accumulates bugs, and since it's legacy code,
+there are rarely enough resources to find and fix them.
+
+We need to make sure that these bugs do not compromise security.
+
+In the next video, I'll discuss the underlying problems behind the
+three puzzlers.  I'm going to argue that, even though each has a
+different kind of vulnerability, there are common threads.
+
+I hope to convince you that we can have the benefits of highly dynamic
+languages while producing secure systems.
+
+If you want to avoid these problems in your code, use a strict
+contextually autoescaping template system.
+I wrote the html template language in this example to demonstrate
+a problem, and it should not be used in production because it does
+not handle javascript URLs in attributes among other problems.
+
+Thanks for watching.

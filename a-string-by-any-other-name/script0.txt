@@ -1,0 +1,57 @@
+[TAB-0]
+
+Welcome.  This is the third in a series of Web Puzzlers.  There are
+links in the notes below to previous episodes.
+
+Today I'm going to talk about a security classic: XSS.  Like
+the last puzzle, I've split it into this intro video and the next
+will show an attack and discuss the underlying problem.
+
+Here's the codepen.  This is client-side JavaScript running in the
+browser.
+By the way, if you're not familiar with codepen, you can click the
+fork button at the top to make yourself a copy that you can save and
+come back to.
+
+At the bottom, you can see that the render function injects HTML into
+an iframe.  The iframe [source-doc] attribute takes a string of HTML,
+not a URL.  This is the function that you should attack.  You win if
+you can find a string input to render that executes javascript in that
+iframe.
+
+You can see that it's assigned this html backtick string which contains
+what looks like an HTML document.  There are expressions inside
+dollar-curly brackets.  The first one follows two dollar signs and
+seems a bit more complex than the other ones.
+
+[TYPE render(`{}`)]
+If I call render, passing a string of JSON, it shows some output
+in the content frame.
+
+[TYPE render(`{ "noun1": "<b>spork</b>" }`)]
+And I can specify properties to fill in.
+
+Scrolling back to the top, you'll see "function HTML".
+This function is called whenever the html backtick string is evaluated.
+Search for "tagged string templates" if you want to understand how that
+works.
+This function looks like a very simple HTML template language and it
+calls escapeHTML for each expression inside dollar curly brackets.
+But if there are two dollar-signs, it doesn't escape.
+
+Next, function stripTags looks like it takes HTML and returns the HTML
+without tags.
+
+The rest of the code looks like application code that has been around
+long enough to change owners.  For example, to show a legacy user
+
+[TYPE render(`{ "legacyUserId": 85322 }`)]
+
+So, you've got 60 lines of legacy code that assigns HTML.  Can you
+find an XSS in it?  What string can you pass to render that will
+let you execute arbitrary code?
+
+There are links in the notes below to the next video which presents
+one solution and discusses the underlying problem in this code.
+
+Thanks for watching.

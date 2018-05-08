@@ -1,0 +1,44 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>body { font-size: 13pt }</style>
+  <body>
+    <pre class="prettyprint lang-go">
+package main
+import ("fmt"; "reflect";)
+
+var capitals = map[string]map[string]interface{}{
+  "CA": {
+    "AB": "Edmonton",
+    "BC": "Victoria",
+    "MB": "Winnipeg",
+    // etc.
+  },
+  "US": {
+    "AL": func(year int) string {
+      if (year < 1846) { return "Tuscaloosa"; }
+      return "Montgomery"
+    },
+    "AK": "Juneau",
+    "AR": "Phoenix",
+    // etc.
+  },
+}
+
+func capitalOf(country string, stateOrProvinceName string, year int) string {
+  var m = capitals[country]
+  if (m != nil) {
+    var capital interface{} = m[stateOrProvinceName]
+    if (capital != nil) {
+      for ; reflect.TypeOf(capital).Kind() == reflect.Func;  {
+        capital = (capital.(func (int) string))(year)
+      }
+      return capital.(string)
+    }
+  }
+  return "nil"
+}
+    </pre>
+  </body>
+</html>

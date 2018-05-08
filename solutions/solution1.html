@@ -1,0 +1,53 @@
+<html>
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'sha256-X37nK6bUkwOd0E9abh/GBNG3d1ZvGsv331NwplEALmA='
+               'sha256-5lgvbxNigxEpfSngMbVMAJBtPqRU1C0hcchrghRwxBQ=';
+  ">
+  <script>
+    var capitals = {
+      "CA": {
+        "AB": "Edmonton",
+        "BC": "Victoria",
+        "MB": "Winnipeg",
+        // etc.
+      },
+      "US": {
+        "AL": (year) => {
+          if (year < 1846) { return "Tuscaloosa"; }
+          return "Montgomery"
+        },
+        "AK": "Juneau",
+        "AR": "Phoenix",
+        // etc.
+      },
+    }
+
+    function capitalOf(country, stateOrProvinceName, year) {
+      var m = capitals[country]
+      if (m) {
+        var capital = m[stateOrProvinceName]
+        if (capital) {
+          for (; typeof capital == 'function';) {
+            capital = capital(year)
+          }
+          return capital
+        }
+      }
+      return "nil"
+    }
+  </script>
+  <script>
+    [
+      ['US', 'AL', 1900],
+      ['constructor', 'constructor', 'alert(1)'],
+    ].forEach(args => {
+      console.group(JSON.stringify(args));
+      try {
+        console.log(capitalOf(...args));
+      } finally {
+        console.groupEnd();
+      }
+    })
+  </script>
+</html>

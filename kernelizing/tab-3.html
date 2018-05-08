@@ -1,0 +1,83 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    body, td, th { font-size: 18pt }
+    tr { vertical-align: top }
+    td, th { padding: .5em; height: 5em }
+    table { margin: -5.5em 1em 0 1em }
+  </style>
+  <body>
+    <center>
+      <h1>Security in Dynamic Systems</h1>
+    </center>
+
+    <table style="width: 100%" class="for:0-6">
+      <tr style="vertical-align: bottom">
+        <th width=20%><th width=40%>Static<th width=40%>Dynamic</th>
+      </tr>
+      <tr>
+        <th>&ldquo;only &hellip;&rdquo;:<br>separate privileges</th>
+        <td>
+          <span class="for:1-6">
+            Check security via tight toolchain integration.
+            Use language features like <code>private</code>, <code>friend</code>,
+            sound types.
+          </span>
+        </td>
+        <td>
+          <span class="for:4-6">
+            Access decisions at runtime based on module identity.
+            Treat <tt>import</tt> as an access to check.
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <th>&ldquo;carefully reviewed&rdquo;:<br>efficiently use human judgement</th>
+        <td>
+          <span class="for:2-6">
+            Humans grant privileges by adding to whitelists
+            under source control.  Check grants at build time.
+          </span>
+        </td>
+        <td>
+          <span class="for:5-6">
+            Same but check access at runtime using module whitelists.
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <th>&ldquo;finish &hellip; before &hellip;&rdquo;:<br>lifecycle</th>
+        <td>
+          <span class="for:3-6">
+            Enables meta-programming and code-generation in the build system.
+          </span>
+        </td>
+        <td>
+          <span class="for:6-6">
+            Depend more on privilege separation but
+            the main module could advance to lower privilege stages.
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <blockquote class="for:8">
+      <img src="images/filtered-module-graph.svg">
+      <pre class="prettyprint lang-js">
+// index.js
+let staticLoad = <b>require('./lib/static')</b>;
+function dynamicLoad(f, x) {
+  return f('./lib/' + x);
+}
+dynamicLoad(<b>require</b>, Math.random() &lt; 2 ? <b>'dynamic'</b> : 'bogus');
+exports.lazyLoad = () => <b>require('./lib/lazy')</b>;
+// Fallback to alternatives
+['./lib/opt1', <b>'./lib/opt2'</b>].forEach(&hellip;);
+      </pre>
+    </blockquote>
+
+    <script src="../slide.js"></script>
+  </body>
+</html>

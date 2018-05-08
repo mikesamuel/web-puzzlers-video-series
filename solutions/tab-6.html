@@ -1,0 +1,92 @@
+<html>
+  <title>JS Quiz</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <style>
+    tr { vertical-align: top }
+    td, th { padding: .5em; height: 5em }
+    table { margin: .5em }
+    body, p { font-size: 24pt }
+    .str > .pln, .str > .typ { color: green }
+  </style>
+  <body>
+    <h1>Solution: XSS in Legacy Code</h1>
+
+
+    <div class="for:1 rapid">
+      <h3>policy.js</h3>
+      <pre class="prettyprint lang-js">
+((global) => {
+  let whitelist = Object.assign(Object.create(null), {
+    // create_trusted produces trusted string wrappers.
+    'create_trusted': new Set([
+      // The output of the HTML template is safe.
+      'html',
+      // Only bless constants.
+      'legacy_names',
+      'trusted_types',
+    ])
+  })
+  &hellip;
+})(global);
+      </pre>
+    </div>
+
+    <div class="for:2 rapid">
+      <h3>policy.js</h3>
+      <pre class="prettyprint lang-js">
+&hellip;
+global.moduleImportInterceptHook = (base, importer, importee) => {
+  &hellip; {
+    // importee is not a sensitive module.
+    return importee;
+  } &hellip; {
+    // importer is in the whitelist.
+    return importee;
+  } &hellip;
+  // Violation detected.  Log and add "_fallback" to the URL
+  // to make it easy to provide an equivalent but safe API.
+  return substitute;
+};
+</pre>
+    </div>
+
+    <div class="for:3 rapid">
+      <h3>import_hook_babel_plugin/index.js</h3>
+      <pre class="prettyprint lang-js">
+let { URL } = require('url')
+let policy = require('../policy')
+
+let hook = global.moduleImportInterceptHook
+let baseUrl = new URL('https://example.com:123/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x/y/z/');
+
+function relativizePaths(base, path) { &hellip; }
+
+&hellip;
+      </pre>
+    </div>
+
+    <div class="for:4 rapid">
+      <h3 style="margin-top: -1em">import_hook_babel_plugin/index.js</h3>
+      <pre class="prettyprint lang-js">
+module.exports = ({ types: t }) => {
+  visitor: {
+    ImportDeclaration(path, state) {
+      let filename = state.file.opts.filename;
+      let moduleSpecifier = path.node.source.value;
+      let fileUrl = new URL(filename, baseUrl);
+      let moduleUrl = new URL(moduleSpecifier, fileUrl);
+      let fixed = <b>hook(baseUrl.toString(),
+                       fileUrl.toString(), moduleUrl.toString())</b>;
+      if (fixed !== moduleUrl.toString()) {
+        &hellip;  // Elided sanity checks
+        fixed = relativizePaths(
+            baseUrl.pathname, fixedUrl.pathname);
+        <b>path.node.source = t.stringLiteral(fixed)</b>;
+} } } };
+      </pre>
+    </div>
+
+    <script src="../slide.js"></script>
+  </body>
+</html>
